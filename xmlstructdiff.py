@@ -3,6 +3,29 @@ import os
 import gzip
 from lxml import etree
 from typing import List, Tuple, Dict, Any
+import pathlib
+
+
+def supports_hyperlinks():
+    # Known good terminals
+    term_programs = {
+        "iTerm.app",
+        "WezTerm",
+        "vscode",  # VS Code integrated terminal
+        "Windows Terminal",
+    }
+    term = os.environ.get("TERM_PROGRAM", "")
+    colorterm = os.environ.get("COLORTERM", "")
+    return term in term_programs or "truecolor" in colorterm or sys.stdout.isatty()
+
+
+def make_file_link(file_path: str, line: int) -> str:
+    if not supports_hyperlinks():
+        return file_path
+
+    abs_path = pathlib.Path(file_path).resolve()
+    uri = f"vscode://file{abs_path}:{line}:1"
+    return f"\033]8;;{uri}\a{file_path}\033]8;;\a"
 
 
 def open_xml_file(path):
@@ -52,7 +75,11 @@ def _build_node_structure(element, content: bytes) -> Dict[str, Any]:
 
 
 def compare_structures(
-    struct1: List[Dict[str, Any]], struct2: List[Dict[str, Any]], path: str = ""
+    struct1: List[Dict[str, Any]],
+    struct2: List[Dict[str, Any]],
+    path: str = "",
+    file1: str = "",
+    file2: str = "",
 ) -> List[str]:
     diffs = []
     current_group = []
@@ -70,8 +97,8 @@ def compare_structures(
         if node1["tag"] != node2["tag"]:
             current_group.append(
                 f"Different tags at {current_path}: {node1['tag']} vs {node2['tag']}\n"
-                f"  File 1 (line {node1['start_line']}): {node1['opening_tag']}\n"
-                f"  File 2 (line {node2['start_line']}): {node2['opening_tag']}\n"
+                f"  {make_file_link(file1, node1['start_line'])} (line {node1['start_line']}): {node1['opening_tag']}\n"
+                f"  {make_file_link(file2, node2['start_line'])} (line {node2['start_line']}): {node2['opening_tag']}\n"
             )
             continue
 
@@ -79,8 +106,8 @@ def compare_structures(
         if len(node1["children"]) != len(node2["children"]):
             current_group.append(
                 f"Different number of children at {current_path}\n"
-                f"  File 1 (line {node1['start_line']}): {node1['opening_tag']}\n"
-                f"  File 2 (line {node2['start_line']}): {node2['opening_tag']}"
+                f"  {make_file_link(file1, node1['start_line'])} (line {node1['start_line']}): {node1['opening_tag']}\n"
+                f"  {make_file_link(file2, node2['start_line'])} (line {node2['start_line']}): {node2['opening_tag']}"
             )
 
         # Compare child tags
@@ -93,19 +120,19 @@ def compare_structures(
             if missing_in_1:
                 current_group.append(
                     f"Missing elements in File 1 at {current_path}: {', '.join(missing_in_1)}\n"
-                    f"  File 1 (line {node1['start_line']}): {node1['opening_tag']}\n"
-                    f"  File 2 (line {node2['start_line']}): {node2['opening_tag']}"
+                    f"  {make_file_link(file1, node1['start_line'])} (line {node1['start_line']}): {node1['opening_tag']}\n"
+                    f"  {make_file_link(file2, node2['start_line'])} (line {node2['start_line']}): {node2['opening_tag']}"
                 )
             if missing_in_2:
                 current_group.append(
                     f"Missing elements in File 2 at {current_path}: {', '.join(missing_in_2)}\n"
-                    f"  File 1 (line {node1['start_line']}): {node1['opening_tag']}\n"
-                    f"  File 2 (line {node2['start_line']}): {node2['opening_tag']}"
+                    f"  {make_file_link(file1, node1['start_line'])} (line {node1['start_line']}): {node1['opening_tag']}\n"
+                    f"  {make_file_link(file2, node2['start_line'])} (line {node2['start_line']}): {node2['opening_tag']}"
                 )
 
         # Recursively compare children
         child_diffs = compare_structures(
-            node1["children"], node2["children"], current_path
+            node1["children"], node2["children"], current_path, file1, file2
         )
         if child_diffs:
             if current_group:
@@ -159,7 +186,7 @@ def main():
     try:
         struct1 = build_tree_structure(file1)
         struct2 = build_tree_structure(file2)
-        diffs = compare_structures(struct1, struct2)
+        diffs = compare_structures(struct1, struct2, file1=file1, file2=file2)
         print(format_diff(diffs))
     except RuntimeError as e:
         print(e)
