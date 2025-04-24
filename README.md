@@ -19,7 +19,9 @@ docker build -t xmlstructdiff .
 docker run --rm -v "$PWD":/data xmlstructdiff /data/file1.xml /data/file2.xml
 ```
 
-## Example
+## Examples
+
+### Simple Example
 
 ```bash
 <root>
@@ -46,6 +48,32 @@ Will output:
    <item>
 -    <name>
 +    <title>
+```
+
+### Real-world Example
+
+Compare two course catalog XML files:
+
+```bash
+# Using Python directly
+python xmlstructdiff.py examples/file-1a.xml examples/file-1b.xml
+
+# Using Docker
+docker build -t xmlstructdiff .
+
+docker run --rm -v "$PWD":/data xmlstructdiff /data/examples/file-1a.xml /data/examples/file-1b.xml
+```
+
+The output will show structural differences between the course catalogs, such as:
+
+```diff
+@@ -1,5 +1,5 @@
+ <root>
+   <course>
+-    <time>
++    <schedule>
+       <start_time>
+       <end_time>
 ```
 
 ## Notes
