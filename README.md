@@ -76,9 +76,12 @@ The output will show structural differences between the course catalogs, such as
        <end_time>
 ```
 
-## Notes
+Also try comparing `file-1a.xml` against `file-1c.xml`
 
-- Handles large files by streaming via `lxml.iterparse`
+## Notes
 - Ignores attribute values, text, tail text, and comments
-- Output format is `diff -u` style
+
+## Wishlist
+- Handling really large files needs streaming via `lxml.iterparse` but this proved difficult to implement with the current requirements of needing to print line numbers as well as parent-child tree.
+
 
