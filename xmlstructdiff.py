@@ -55,10 +55,12 @@ def compare_structures(
     struct1: List[Dict[str, Any]], struct2: List[Dict[str, Any]], path: str = ""
 ) -> List[str]:
     diffs = []
+    current_group = []
 
     # Compare root elements
     if len(struct1) != len(struct2):
-        diffs.append(f"Different number of root elements at {path}")
+        current_group.append(f"Different number of root elements at {path}")
+        diffs.append("\n".join(current_group))
         return diffs
 
     for i, (node1, node2) in enumerate(zip(struct1, struct2)):
@@ -66,7 +68,7 @@ def compare_structures(
 
         # Compare tags
         if node1["tag"] != node2["tag"]:
-            diffs.append(
+            current_group.append(
                 f"Different tags at {current_path}: {node1['tag']} vs {node2['tag']}\n"
                 f"  File 1 (line {node1['start_line']}): {node1['opening_tag']}\n"
                 f"  File 2 (line {node2['start_line']}): {node2['opening_tag']}"
@@ -75,7 +77,7 @@ def compare_structures(
 
         # Compare children
         if len(node1["children"]) != len(node2["children"]):
-            diffs.append(
+            current_group.append(
                 f"Different number of children at {current_path}\n"
                 f"  File 1 (line {node1['start_line']}): {node1['opening_tag']}\n"
                 f"  File 2 (line {node2['start_line']}): {node2['opening_tag']}"
@@ -89,13 +91,13 @@ def compare_structures(
             missing_in_1 = child_tags2 - child_tags1
             missing_in_2 = child_tags1 - child_tags2
             if missing_in_1:
-                diffs.append(
+                current_group.append(
                     f"Missing elements in File 1 at {current_path}: {', '.join(missing_in_1)}\n"
                     f"  File 1 (line {node1['start_line']}): {node1['opening_tag']}\n"
                     f"  File 2 (line {node2['start_line']}): {node2['opening_tag']}"
                 )
             if missing_in_2:
-                diffs.append(
+                current_group.append(
                     f"Missing elements in File 2 at {current_path}: {', '.join(missing_in_2)}\n"
                     f"  File 1 (line {node1['start_line']}): {node1['opening_tag']}\n"
                     f"  File 2 (line {node2['start_line']}): {node2['opening_tag']}"
@@ -105,7 +107,14 @@ def compare_structures(
         child_diffs = compare_structures(
             node1["children"], node2["children"], current_path
         )
-        diffs.extend(child_diffs)
+        if child_diffs:
+            if current_group:
+                diffs.append("\n".join(current_group))
+                current_group = []
+            diffs.extend(child_diffs)
+
+    if current_group:
+        diffs.append("\n".join(current_group))
 
     return diffs
 
@@ -114,7 +123,23 @@ def format_diff(diffs: List[str]) -> str:
     if not diffs:
         return "No structural differences found."
 
-    return "Structural differences:\n" + "\n".join(f"- {diff}" for diff in diffs)
+    # Group related changes together
+    grouped_diffs = []
+    current_group = []
+
+    for diff in diffs:
+        if diff.startswith("- "):
+            if current_group:
+                grouped_diffs.append("\n".join(current_group))
+                current_group = []
+            current_group.append(diff)
+        else:
+            current_group.append(diff)
+
+    if current_group:
+        grouped_diffs.append("\n".join(current_group))
+
+    return "Structural differences:\n" + "\n".join(grouped_diffs)
 
 
 def main():
