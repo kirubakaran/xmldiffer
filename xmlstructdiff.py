@@ -71,7 +71,7 @@ def compare_structures(
             current_group.append(
                 f"Different tags at {current_path}: {node1['tag']} vs {node2['tag']}\n"
                 f"  File 1 (line {node1['start_line']}): {node1['opening_tag']}\n"
-                f"  File 2 (line {node2['start_line']}): {node2['opening_tag']}"
+                f"  File 2 (line {node2['start_line']}): {node2['opening_tag']}\n"
             )
             continue
 
