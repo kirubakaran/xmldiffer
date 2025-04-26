@@ -2,6 +2,8 @@
 
 This tool compares the **structure only** of two XML files — ignoring text, attributes, and comments — and outputs a unified diff of the tag hierarchy.
 
+![xmldiff-users](https://github.com/user-attachments/assets/18e4cb21-4a89-44de-80d7-0a11bb9208ad)
+
 ## Usage
 
 ### Command line
