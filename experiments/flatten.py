@@ -4,7 +4,9 @@ from xml.etree import ElementTree as ET
 
 def flatten_xml(element, path=""):
     current_path = path + element.tag if not path else path + " > " + element.tag
-    print(current_path)
+    # Get the line number from the element's source info
+    line_num = element.sourceline if hasattr(element, "sourceline") else 0
+    print(f"{current_path}\t{line_num}")
 
     for child in element:
         flatten_xml(child, current_path)
@@ -18,7 +20,8 @@ def main():
     xml_file = sys.argv[1]
 
     try:
-        tree = ET.parse(xml_file)
+        parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True))
+        tree = ET.parse(xml_file, parser=parser)
         root = tree.getroot()
         flatten_xml(root)
     except FileNotFoundError:

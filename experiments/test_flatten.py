@@ -9,7 +9,8 @@ from flatten import flatten_xml
 class TestXMLFlattener(unittest.TestCase):
     def assert_flattened_output(self, xml_string, expected_output):
         # Parse XML string directly instead of file
-        root = ET.fromstring(xml_string)
+        parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True))
+        root = ET.fromstring(xml_string, parser=parser)
 
         # Capture stdout to test the output
         f = io.StringIO()
@@ -34,9 +35,9 @@ class TestXMLFlattener(unittest.TestCase):
         </root>
         """
         expected = """
-        root
-        root > item
-        root > item > name
+        root\t2
+        root > item\t3
+        root > item > name\t4
         """
         self.assert_flattened_output(xml, expected)
 
@@ -54,13 +55,13 @@ class TestXMLFlattener(unittest.TestCase):
         </library>
         """
         expected = """
-        library
-        library > book
-        library > book > title
-        library > book > author
-        library > book > details
-        library > book > details > year
-        library > book > details > publisher
+        library\t2
+        library > book\t3
+        library > book > title\t4
+        library > book > author\t5
+        library > book > details\t6
+        library > book > details > year\t7
+        library > book > details > publisher\t8
         """
         self.assert_flattened_output(xml, expected)
 
@@ -75,22 +76,22 @@ class TestXMLFlattener(unittest.TestCase):
         </contacts>
         """
         expected = """
-        contacts
-        contacts > person
-        contacts > person > name
-        contacts > person > email
-        contacts > person > phone
+        contacts\t2
+        contacts > person\t3
+        contacts > person > name\t4
+        contacts > person > email\t5
+        contacts > person > phone\t6
         """
         self.assert_flattened_output(xml, expected)
 
     def test_empty_xml(self):
         xml = "<root></root>"
-        expected = "root"
+        expected = "root\t1"
         self.assert_flattened_output(xml, expected)
 
     def test_single_element_xml(self):
         xml = "<root/>"
-        expected = "root"
+        expected = "root\t1"
         self.assert_flattened_output(xml, expected)
 
 
