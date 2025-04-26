@@ -11,13 +11,18 @@ from flatten import flatten_xml
 class TestXMLFlattener(unittest.TestCase):
     def assert_flattened_output(self, xml_string, expected_output):
         # Create a temporary file and write the XML to it
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".xml", delete=False, encoding="utf-8"
+        ) as tmp:
             tmp.write(xml_string.strip())
             tmp_path = tmp.name
 
         try:
-            # Parse XML from the temporary file
-            tree = etree.parse(tmp_path)
+            # Parse XML from the temporary file with lenient parser
+            parser = etree.XMLParser(
+                recover=True, remove_blank_text=True, encoding="utf-8"
+            )
+            tree = etree.parse(tmp_path, parser=parser)
             root = tree.getroot()
 
             # Capture stdout to test the output
@@ -102,6 +107,19 @@ class TestXMLFlattener(unittest.TestCase):
         xml = """<?xml version="1.0" encoding="UTF-8"?>
 <root/>"""
         expected = "root\t2"
+        self.assert_flattened_output(xml, expected)
+
+    def test_invalid_chars_xml(self):
+        xml = """<?xml version="1.0" encoding="UTF-8"?>
+<root>
+    <item>Invalid char: \x00</item>
+    <item>Invalid char: \x1f</item>
+</root>"""
+        expected = """
+        root\t2
+        root > item\t3
+        root > item\t4
+        """
         self.assert_flattened_output(xml, expected)
 
 
